@@ -2,7 +2,6 @@ require "anybase/version"
 require "securerandom"
 
 class Anybase
-
   UnrecognizedCharacterError = Class.new(RuntimeError)
 
   attr_reader :chars, :char_map, :num_map, :regexp
@@ -13,32 +12,31 @@ class Anybase
     @sign = opts && opts.key?(:sign) ? opts[:sign] : nil
     raise if @sign && @chars.index(@sign)
     @synonyms = opts && opts[:synonyms]
-    @synonyms_tr = ['', ''] if @synonyms
-    @char_map = Hash.new{|h,k| raise UnrecognizedCharacterError.new("the character `#{k.chr}' is not included in #{@chars}")}
+    @synonyms_tr = ["", ""] if @synonyms
+    @char_map = Hash.new { |_h,k| raise UnrecognizedCharacterError, "the character `#{k.chr}' is not included in #{@chars}" }
     @num_map = {}
     if ignore_case?
       @chars.downcase!
     end
-    regexp_str = '['
-    @chars.split('').each_with_index do |c, i|
+    regexp_str = "["
+    @chars.chars.each_with_index do |c, i|
       regexp_str << Regexp.quote(c)
       add_mapping(c, i)
       @num_map[i] = c
-      if @synonyms && @synonyms[c]
-        @synonyms[c].split('').each { |sc|
-          regexp_str << Regexp.quote(sc)
-          @synonyms_tr[1] << c
-          @synonyms_tr[0] << sc
-        }
-      end
+      next unless @synonyms && @synonyms[c]
+      @synonyms[c].chars.each { |sc|
+        regexp_str << Regexp.quote(sc)
+        @synonyms_tr[1] << c
+        @synonyms_tr[0] << sc
+      }
     end
-    regexp_str << ']+'
+    regexp_str << "]+"
     @regexp = @ignore_case ? Regexp.new(regexp_str, Regexp::IGNORECASE) : Regexp.new(regexp_str)
   end
 
   def match(str)
-    if match = @regexp.match(str)
-      match.begin(0) == 0 ? match[0] : nil
+    if (match = @regexp.match(str))
+      match.begin(0).zero? ? match[0] : nil
     else
       nil
     end
@@ -49,7 +47,7 @@ class Anybase
   end
 
   def size(digits)
-    chars.length ** digits
+    chars.length**digits
   end
 
   def normalize(val)
@@ -59,10 +57,10 @@ class Anybase
 
   def random(digits, opts = nil)
     zero_pad = opts && opts.key?(:zero_pad) ? opts[:zero_pad] : true
-    number = ''
-    digits.times { number << chars[SecureRandom.random_number(chars.size)]}
+    number = ""
+    digits.times { number << chars[SecureRandom.random_number(chars.size)] }
     unless zero_pad
-      number.sub!(/\A#{Regexp.quote(chars[0].chr)}+/, '')
+      number.sub!(/\A#{Regexp.quote(chars[0].chr)}+/, "")
       number = chars[0].chr if number.empty?
     end
     number
@@ -70,29 +68,27 @@ class Anybase
 
   def to_i(val)
     val = normalize(val)
-    op = if @sign and val[0] == @sign[0]
+    op = if @sign && (val[0] == @sign[0])
       val.slice!(0, 1)
       :-
     else
       :+
     end
     num = 0
-    (0...val.size).each{|i|
-      num = num.send(op, (chars.size ** (val.size - i - 1)) * char_map[val[i]])
+    (0...val.size).each { |i|
+      num = num.send(op, (chars.size**(val.size - i - 1)) * char_map[val[i]])
     }
     num
   end
 
   def to_native(val, options = nil)
     if val < 0
-      if @sign
-        val = val.abs
-        signed = true
-      else
-        raise
-      end
+      raise unless @sign
+
+      val = val.abs
+      signed = true
     end
-    str = ''
+    str = ""
     until val.zero?
       digit = val % chars.size
       val /= chars.size
@@ -101,17 +97,21 @@ class Anybase
     if options && options[:zero_pad] && str.size < options[:zero_pad]
       str[0, 0] = num_map[0] * (options[:zero_pad] - str.size)
     end
-    str == '' ? num_map[0].dup : (signed ? @sign.dup << str : str)
+    if str == ""
+      num_map[0].dup
+    else
+      (signed ? @sign.dup << str : str)
+    end
   end
 
-  def add_mapping(c, i)
-    char_map[c[0]] = i
+  def add_mapping(char, index)
+    char_map[char[0]] = index
   end
   private :add_mapping
 
-  Hex          = Anybase.new('0123456789abcdef', :ignore_case => true)
-  Base62       = Anybase.new('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789')
-  Base64       = Anybase.new('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/')
-  Base64ForURL = Anybase.new('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_')
-  Base73ForURL = Anybase.new('ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789$-_.+!*\'(),')
+  Hex          = Anybase.new("0123456789abcdef", ignore_case: true)
+  Base62       = Anybase.new("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
+  Base64       = Anybase.new("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/")
+  Base64ForURL = Anybase.new("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_")
+  Base73ForURL = Anybase.new("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789$-_.+!*'(),")
 end

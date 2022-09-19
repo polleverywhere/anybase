@@ -1,25 +1,29 @@
-# -*- encoding: utf-8 -*-
-$:.push File.expand_path("../lib", __FILE__)
-require "anybase/version"
+# frozen_string_literal: true
 
-Gem::Specification.new do |s|
-  s.name        = "anybase"
-  s.version     = Anybase::VERSION
-  s.authors     = ["Joshual Hull", "Brad Gessler"]
-  s.email       = ["joshbuddy@gmail.com", "brad@bradgessler.com"]
-  s.homepage    = "http://github.com/joshbuddy/anybase"
-  s.summary     = %q{Numbers from anybase to anybase}
-  s.description = %q{Numbers from anybase to anybase}
-  s.licenses    = ["MIT"]
+require_relative "lib/anybase/version"
 
-  s.rubyforge_project = "anybase"
+Gem::Specification.new do |spec|
+  spec.name = "anybase"
+  spec.version = Anybase::VERSION
+  spec.authors = ["Joshual Hull", "Brad Gessler", "Brad Lindsay"]
+  spec.email = "geeks@polleverywhere.com"
 
-  s.files         = `git ls-files`.split("\n")
-  s.test_files    = `git ls-files -- {test,spec,features}/*`.split("\n")
-  s.executables   = `git ls-files -- bin/*`.split("\n").map{ |f| File.basename(f) }
-  s.require_paths = ["lib"]
+  spec.summary = "Create or translate numbers from any base to any base"
+  spec.description = "Create or translate numbers from any base to any base"
+  spec.homepage = "https://github.com/polleverywhere/anybase"
+  spec.required_ruby_version = ">= 2.0"
+  spec.licenses = ["MIT"]
 
-  # specify any dependencies here; for example:
-  s.add_development_dependency "rspec"
-  s.add_development_dependency "rake"
+  spec.metadata["homepage_uri"] = spec.homepage
+  spec.metadata["source_code_uri"] = "https://github.com/polleverywhere/anybase"
+  spec.metadata["changelog_uri"] = "#{spec.metadata["source_code_uri"]}/CHANGELOG.md"
+  spec.metadata["rubygems_mfa_required"] = "true"
+
+  # Specify which files should be added to the gem when it is released.
+  # The `git ls-files -z` loads the files in the RubyGem that have been added into git.
+  spec.files = Dir.chdir(__dir__) do
+    `git ls-files -z`.split("\x0").reject do |f|
+      (f == __FILE__) || f.match(%r{\A(?:(?:bin|test|spec|features)/|\.(?:git|travis|circleci)|appveyor)})
+    end
+  end
 end
