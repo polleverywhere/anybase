@@ -1,114 +1,129 @@
+# frozen_string_literal: true
+
 require "anybase/version"
 require "securerandom"
 
 class Anybase
-  UnrecognizedCharacterError = Class.new(RuntimeError)
+  UnrecognizedCharacterError = Class.new(StandardError)
+  NegativeSignListedAsDigitError = Class.new(StandardError)
+  NegativeSignTooLongError = Class.new(StandardError)
+  UnknownNegativeSignError = Class.new(StandardError)
 
-  attr_reader :chars, :char_map, :num_map, :regexp
+  attr_reader :digits, :char_map, :num_map, :regexp, :negative_sign
 
-  def initialize(chars, opts = nil)
-    @chars = chars.dup
-    @ignore_case = opts && opts.key?(:ignore_case) ? opts[:ignore_case] : false
-    @sign = opts && opts.key?(:sign) ? opts[:sign] : nil
-    raise if @sign && @chars.index(@sign)
-    @synonyms = opts && opts[:synonyms]
-    @synonyms_tr = ["", ""] if @synonyms
-    @char_map = Hash.new { |_h,k| raise UnrecognizedCharacterError, "the character `#{k.chr}' is not included in #{@chars}" }
-    @num_map = {}
-    if ignore_case?
-      @chars.downcase!
-    end
-    regexp_str = "["
-    @chars.chars.each_with_index do |c, i|
-      regexp_str << Regexp.quote(c)
-      add_mapping(c, i)
-      @num_map[i] = c
-      next unless @synonyms && @synonyms[c]
-      @synonyms[c].chars.each { |sc|
-        regexp_str << Regexp.quote(sc)
-        @synonyms_tr[1] << c
-        @synonyms_tr[0] << sc
-      }
+  def initialize(digit_string, ignore_case: false, negative_sign: nil, synonyms: {})
+    raise NegativeSignTooLongError if negative_sign && negative_sign.size > 1
+    raise NegativeSignListedAsDigitError if negative_sign && digit_string.index(negative_sign)
+
+    self.digits = digit_string.dup
+    self.ignore_case = ignore_case
+    self.negative_sign = negative_sign
+    self.synonyms = synonyms
+    self.synonyms_tr = [String.new, String.new]
+    self.char_map = Hash.new { |_h,k| raise UnrecognizedCharacterError, "the character `#{k}' is not included in #{digits}" }
+    self.num_map = {}
+
+    digits.downcase! if ignore_case?
+
+    regexp_str = String.new("[")
+    digits.each_char.with_index do |char, i|
+      regexp_str << Regexp.quote(char)
+      char_map[char] = i
+      num_map[i] = char
+
+      next unless synonyms[char]
+
+      synonyms[char].each_char do |synonym|
+        regexp_str << Regexp.quote(synonym)
+        synonyms_tr[0] << synonym
+        synonyms_tr[1] << char
+      end
     end
     regexp_str << "]+"
-    @regexp = @ignore_case ? Regexp.new(regexp_str, Regexp::IGNORECASE) : Regexp.new(regexp_str)
+    self.regexp = ignore_case? ? Regexp.new(regexp_str, Regexp::IGNORECASE) : Regexp.new(regexp_str)
   end
 
   def match(str)
-    if (match = @regexp.match(str))
-      match.begin(0).zero? ? match[0] : nil
+    if (match = regexp.match(str)) && match.begin(0).zero?
+      match[0]
     else
       nil
     end
   end
 
   def ignore_case?
-    @ignore_case
+    ignore_case
   end
 
-  def size(digits)
-    chars.length**digits
+  def size(length)
+    digits.length**length
   end
 
   def normalize(val)
-    val = val.downcase if ignore_case?
-    @synonyms ? val.tr(*@synonyms_tr) : val
+    val = ignore_case? ? val.downcase : val.dup
+    synonyms.empty? ? val : val.tr(*synonyms_tr)
   end
 
-  def random(digits, opts = nil)
-    zero_pad = opts && opts.key?(:zero_pad) ? opts[:zero_pad] : true
-    number = ""
-    digits.times { number << chars[SecureRandom.random_number(chars.size)] }
-    unless zero_pad
-      number.sub!(/\A#{Regexp.quote(chars[0].chr)}+/, "")
-      number = chars[0].chr if number.empty?
+  def random(length, trim_leading_zeros: false)
+    number = String.new
+    length.times { number << digits[SecureRandom.random_number(digits.size)] }
+
+    if trim_leading_zeros
+      number.sub!(/\A#{Regexp.quote(digits[0])}+/, "")
+      number = digits[0] if number.empty?
     end
+
     number
   end
 
   def to_i(val)
     val = normalize(val)
-    op = if @sign && (val[0] == @sign[0])
+    num = 0
+    op = if negative_sign && (val[0] == negative_sign[0])
       val.slice!(0, 1)
       :-
     else
       :+
     end
-    num = 0
-    (0...val.size).each { |i|
-      num = num.send(op, (chars.size**(val.size - i - 1)) * char_map[val[i]])
-    }
+
+    (0...val.size).each do |i|
+      num = num.send(op, (digits.size**(val.size - i - 1)) * char_map[val[i]])
+    end
+
     num
   end
 
-  def to_native(val, options = nil)
-    if val < 0
-      raise unless @sign
+  def to_native(val, zero_pad: 1)
+    zero_pad = 1 if zero_pad < 1
+    negative = if val < 0
+      raise UnknownNegativeSignError unless negative_sign
 
       val = val.abs
-      signed = true
+      true
+    else
+      false
     end
-    str = ""
+
+    str = String.new
     until val.zero?
-      digit = val % chars.size
-      val /= chars.size
+      digit = val % digits.size
+      val /= digits.size
       str[0, 0] = num_map[digit]
     end
-    if options && options[:zero_pad] && str.size < options[:zero_pad]
-      str[0, 0] = num_map[0] * (options[:zero_pad] - str.size)
-    end
-    if str == ""
-      num_map[0].dup
-    else
-      (signed ? @sign.dup << str : str)
-    end
+
+    str[0, 0] = num_map[0] * (zero_pad - str.size) if str.size < zero_pad
+    str[0, 0] = negative_sign if negative
+
+    str
   end
 
-  def add_mapping(char, index)
-    char_map[char[0]] = index
-  end
-  private :add_mapping
+  private
 
+  attr_writer :digits, :char_map, :num_map, :regexp, :negative_sign
+  attr_accessor :ignore_case, :synonyms, :synonyms_tr
+end
+
+class Anybase
   Hex          = Anybase.new("0123456789abcdef", ignore_case: true)
   Base62       = Anybase.new("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789")
   Base64       = Anybase.new("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/")

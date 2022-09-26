@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "spec_helper"
 
 RSpec.describe Anybase, "util" do
@@ -10,8 +12,12 @@ RSpec.describe Anybase, "util" do
     expect(Anybase.new("01", synonyms: { "0" => "o", "1" => "l" }, ignore_case: true).normalize("l10oO1o")).to eq("1100010")
   end
 
-  it "raise if the sign is in the chars" do
-    expect { Anybase.new("01", sign: "0") }.to raise_error(RuntimeError)
+  it "raises if the negative sign is in the chars" do
+    expect { Anybase.new("01", negative_sign: "0") }.to raise_error(Anybase::NegativeSignListedAsDigitError)
+  end
+
+  it "raises if the negative sign is longer than one character" do
+    expect { Anybase.new("01", negative_sign: "++") }.to raise_error(Anybase::NegativeSignTooLongError)
   end
 
   it "should allow matching" do

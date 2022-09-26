@@ -14,10 +14,23 @@ and is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 - Rubocop and the Poll Everywhere style rules.
 - New gemspec metadata fields — especially the MFA requirement to submit to RubyGems.
 - Modern gem defaults like "bin/consle".
+- Instead of just an empty `RuntimeError`, the following errors no return to give more
+  information about what the error is:
+  + `NegativeSignListedAsDigitError`
+  + `NegativeSignTooLongError`
+  + `UnknownNegativeSignError`
 
 ### Changed
 
 - Ownership to Poll Everywhere (per the conversation with the previous owner](https://github.com/joshbuddy/anybase/issues/6)).
+- Switch to using named parameters instead of an "opts" hash. (This means you can't pass
+  options using hash rockets anymore. For example `Anybase("abc", :ignore_case => true)` will
+  no longer work. Use `Anybase("abc", ignore_case: true)` instead.)
+- The `Anybase#random` parameter named "zero_pad" was renamed to "trim_leading_zeros", and
+  this new parameter should be passed the opposite of value of the former. (So if you called
+  `random(4, zero_pad: false)` before, now call `random(4, trim_leading_zeros: true)`.)
+- When intializing an `Anybase` object, the "sign" option was renamed to "negative_sign".
+- Calling `Anybase#normalize` now always returns a new string.
 - Use GitHub Actions instead of Travis to run CI tests.
 - Updated RSpec.
 
@@ -29,8 +42,8 @@ and is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ### Deprecated
 
-- Support for Ruby series that are no longer maintained. (At the time of publication, that
-  was any series older than Ruby 2.5.)
+- Support for Ruby series that are [no longer maintained](https://www.ruby-lang.org/en/downloads/branches/).
+  (At the time of publication, that was any series older than Ruby 2.7.)
 
 ### Removed
 

@@ -18,7 +18,7 @@ base.to_native(123450)
 As well, you can tell Anybase to ignore case.
 
 ```ruby
-base = Anybase.new('0123456789abcdef', :ignore_case => true)
+base = Anybase.new('0123456789abcdef', ignore_case: true)
 base.to_i('F0A')
 => 3850
 ```
@@ -26,7 +26,7 @@ base.to_i('F0A')
 Anybase can also have synonyms.
 
 ```ruby
-base = Anybase.new('0123456789abcdef', :synonyms => {'0' => 'oO'}, :ignore_case => true)
+base = Anybase.new('0123456789abcdef', synonyms: {'0' => 'oO'}, ignore_case: true)
 base.to_i('FoA')
 => 3850
 base.to_i('FOA')
@@ -36,16 +36,16 @@ base.to_i('FOA')
 If you just want to translate the number to look at it you can use #normalize
 
 ```ruby
-base = Anybase.new('0123456789abcdef', :synonyms => {'0' => 'oO'}, :ignore_case => true)
+base = Anybase.new('0123456789abcdef', synonyms: {'0' => 'oO'}, ignore_case: true)
 base.normalize('FoA')
 => 'f0a'
 ```
 
-If you want to use negative numbers, assign the sign character using the sign
-option
+If you want to use negative numbers, assign the negative sign character using the
+"negative_sign" option:
 
 ```ruby
-base = Anybase.new('0123456789abcdef', :sign => '-')
+base = Anybase.new('0123456789abcdef', negative_sign: '-')
 base.to_native(-12345)
 => '-3039'
 ```
@@ -53,7 +53,7 @@ base.to_native(-12345)
 Anybase can also zeropad your output with whatever your "zero" character is.
 
 ```ruby
-Anybase.new("012345678").to_native(1234, :zero_pad => 8)
+Anybase.new("012345678").to_native(1234, zero_pad: 8)
 => '00001621'
 ```
 

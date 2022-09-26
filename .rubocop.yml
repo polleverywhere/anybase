@@ -171,3 +171,16 @@ Style/SymbolProc:
 
 Style/WordArray:
   Enabled: false
+
+###
+# In here for code supporting old versions of Ruby
+###
+
+# Ruby 2.0 doesn't support the `+""` unary.
+Performance/UnfreezeString:
+  Enabled: false
+
+# Ruby 2.3 introduced the magic comment, so we need to call `String#freeze` on strings we
+# care about for earlier versions (such as the Gem's VERSION string.)
+Style/RedundantFreeze:
+  Enabled: false

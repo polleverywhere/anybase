@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require "spec_helper"
 
 RSpec.describe Anybase, "from" do
@@ -15,8 +17,8 @@ RSpec.describe Anybase, "from" do
     expect(base.to_i(str)).to eq(base.to_i(str.swapcase))
   end
 
-  it "should translate negative numbers with a sign" do
-    expect(Anybase.new("012345678", sign: "9").to_i("911")).to eq(-10)
+  it "should translate negative numbers with a negative sign" do
+    expect(Anybase.new("012345678", negative_sign: "9").to_i("911")).to eq(-10)
   end
 
   it "should use synonymous" do
