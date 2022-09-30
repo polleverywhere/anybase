@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    anybase (0.0.15)
+    anybase (0.1.0)
 
 GEM
   remote: https://rubygems.org/

@@ -5,7 +5,14 @@ and is loosely based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 
 ## Unreleased
 
-[Unreleased commits](https://github.com/polleverywhere/anybase/compare/v0.0.15...HEAD)
+[Unreleased commits](https://github.com/polleverywhere/anybase/compare/v0.1.0...HEAD)
+
+## 0.1.0 (2022-09-30)
+
+There's a bunch of changes, including some breaking ones in this commit. Starting with this
+release, this gem is owned and maintained by Poll Everywhere.
+
+[0.1.0 commits](https://github.com/polleverywhere/anybase/compare/v0.0.15...v0.1.0)
 
 ### Added
 
